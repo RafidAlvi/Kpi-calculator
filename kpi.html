@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI & Target Dashboard</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-light: #94a3b8;
+            --border: #334155;
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+            --kpi-purple: #a78bfa;
+            --kpi-bg: rgba(139, 92, 246, 0.15);
+            --danger: #ef4444;
+            --focus-ring: rgba(79, 70, 229, 0.4);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .dashboard-container {
+            background: var(--card-bg);
+            padding: 1.75rem 1.5rem;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid var(--border);
+            box-sizing: border-box;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--text);
+            font-size: 1.6rem;
+            text-align: center;
+            margin-bottom: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .formula-box {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            text-align: left;
+            margin-bottom: 1.5rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            line-height: 1.5;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .formula-box strong {
+            color: #38bdf8;
+        }
+
+        /* Responsive Layout Row - Guarantees pristine side-by-side alignment */
+        .input-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            width: 100%;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 0; /* Prevents input blowout on small mobile screens */
+        }
+
+        .input-group.large-fill {
+            flex: 1.6; /* Gives slightly more horizontal breathing room to larger numbers */
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background-color: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 1.05rem;
+            color: var(--text);
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        .input-wrapper input {
+            padding-right: 2.2rem;
+        }
+
+        .suffix {
+            position: absolute;
+            right: 0.85rem;
+            color: var(--text-light);
+            font-weight: 600;
+            pointer-events: none;
+            font-size: 0.95rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 4px var(--focus-ring);
+        }
+
+        input::placeholder {
+            color: #475569;
+        }
+
+        .badge-container {
+            margin-bottom: 1.25rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 20px;
+            background: #334155;
+            color: var(--text-light);
+            letter-spacing: 0.025em;
+            text-transform: uppercase;
+        }
+
+        .badge.active {
+            background: var(--primary);
+            color: var(--text);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .result-container {
+            margin-top: 1.25rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .result-box {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.4);
+            padding: 1rem 0.5rem;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            min-width: 0;
+        }
+
+        .result-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #38bdf8;
+            margin: 0;
+            word-wrap: break-word;
+        }
+
+        .display-card {
+            margin-top: 1.25rem;
+            padding: 1.15rem;
+            border-radius: 14px;
+            text-align: center;
+            display: none;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .display-card.status-success {
+            display: block;
+            background-color: var(--success-bg);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+
+        .display-card.status-warning {
+            display: block;
+            background-color: var(--warning-bg);
+            border-color: rgba(245, 158, 11, 0.3);
+            color: #fbbf24;
+        }
+
+        .display-card.kpi-unlocked {
+            display: block;
+            background-color: var(--kpi-bg);
+            border-color: rgba(167, 139, 250, 0.3);
+            color: var(--kpi-purple);
+            box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.1);
+        }
+
+        .status-title {
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .status-pct {
+            font-size: 1.85rem;
+            font-weight: 800;
+        }
+
+        .kpi-value {
+            font-size: 2.35rem;
+            font-weight: 900;
+            color: #c084fc;
+            margin: 0.25rem 0 0 0;
+        }
+
+        .error-message {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-bottom: 1.25rem;
+            display: none;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <h2>Performance Tracker</h2>
+    
+    <div class="formula-box">
+        <strong>KPI Threshold Auto-Engine:</strong><br>
+        • Repayment Rate &lt; 9% &rarr; 0.00% KPI<br>
+        • Repayment Rate 9% - 11.9% &rarr; 0.30% KPI<br>
+        • Repayment Rate 12% - 12.9% &rarr; 0.40% KPI<br>
+        • Repayment Rate &ge; 13% &rarr; 0.50% KPI
+    </div>
+
+    <div class="input-row">
+        <div class="input-group large-fill">
+            <label for="delegateAmount">Delegated Amount</label>
+            <input type="number" id="delegateAmount" placeholder="e.g. 55960" min="0" step="any" oninput="calculateAll()">
+        </div>
+
+        <div class="input-group">
+            <label for="customPercentage">Target Weight</label>
+            <div class="input-wrapper">
+                <input type="number" id="customPercentage" value="11" min="0" max="100" step="any" oninput="calculateAll()">
+                <span class="suffix">%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-row" style="margin-bottom: 0.75rem;">
+        <div class="input-group">
+            <label for="delegatedCases">Delegated Cases</label>
+            <input type="number" id="delegatedCases" placeholder="Enter case allocation count" min="0" step="any" oninput="calculateAll()">
+        </div>
+    </div>
+    
+    <div id="error" class="error-message">⚠️ Error: Delegated cases cannot be negative.</div>
+    <div class="badge-container"><span id="formulaBadge" class="badge">Awaiting Input Data</span></div>
+
+    <div class="input-row">
+        <div class="input-group large-fill">
+            <label for="achievedAmount">Actual Repayment Done</label>
+            <input type="number" id="achievedAmount" placeholder="Amount collected" min="0" step="any" oninput="calculateAll()">
+        </div>
+
+        <div class="input-group">
+            <label for="customKpi">KPI Override</label>
+            <div class="input-wrapper">
+                <input type="number" id="customKpi" placeholder="Calc" min="0" max="100" step="any" oninput="calculateAll(true)">
+                <span class="suffix">%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="result-container">
+        <div class="result-box">
+            <div class="result-label">Today's Target</div>
+            <div class="result-value" id="targetResult">0.00</div>
+        </div>
+        <div class="result-box">
+            <div class="result-label">Repayment Rate</div>
+            <div class="result-value" id="repaymentRateResult">0.00%</div>
+        </div>
+    </div>
+
+    <div id="achievementBox" class="display-card">
+        <div id="statusTitle" class="status-title">Core Performance Progress</div>
+        <div id="statusPct" class="status-pct">0%</div>
+    </div>
+
+    <div id="kpiBox" class="display-card">
+        <div class="status-title">🏆 New KPI Yield (<span id="kpiRateLabel">0.00</span>%)</div>
+        <div id="kpiResult" class="kpi-value">0</div>
+    </div>
+</div>
+
+<script>
+    let isManualKpiMode = false;
+
+    function calculateAll(manualKpiTrigger = false) {
+        if (manualKpiTrigger) {
+            isManualKpiMode = true;
+        }
+
+        const amount = parseFloat(document.getElementById('delegateAmount').value);
+        const cases = parseFloat(document.getElementById('delegatedCases').value);
+        const achieved = parseFloat(document.getElementById('achievedAmount').value);
+        
+        let percentInput = parseFloat(document.getElementById('customPercentage').value);
+        if (isNaN(percentInput) || percentInput < 0) percentInput = 11; 
+        const pctMultiplier = percentInput / 100;
+
+        const resultDisplay = document.getElementById('targetResult');
+        const rateDisplay = document.getElementById('repaymentRateResult');
+        const errorDisplay = document.getElementById('error');
+        const badge = document.getElementById('formulaBadge');
+        
+        const achievementBox = document.getElementById('achievementBox');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusPct = document.getElementById('statusPct');
+        
+        const kpiBox = document.getElementById('kpiBox');
+        const kpiResult = document.getElementById('kpiResult');
+        const kpiRateLabel = document.getElementById('kpiRateLabel');
+        const kpiInputSelector = document.getElementById('customKpi');
+
+        errorDisplay.style.display = 'none';
+        badge.className = 'badge';
+        badge.innerText = 'Awaiting Input Data';
+        achievementBox.className = 'display-card';
+        kpiBox.className = 'display-card';
+
+        if (isNaN(amount) || isNaN(cases)) {
+            resultDisplay.innerText = "0.00";
+            rateDisplay.innerText = "0.00%";
+            if (!isManualKpiMode) kpiInputSelector.value = "";
+            return;
+        }
+
+        if (cases < 0) {
+            errorDisplay.style.display = 'block';
+            resultDisplay.innerText = "—";
+            return;
+        }
+
+        let target = 0;
+        if (cases <= 220) {
+            target = (amount * pctMultiplier) * 0.90;
+            badge.innerText = "Cases ≤ 220 Applied";
+            badge.classList.add('active');
+        } else {
+            target = (amount / cases) * 220 * pctMultiplier * 0.90;
+            badge.innerText = "Cases > 220 Applied";
+            badge.classList.add('active');
+        }
+
+        resultDisplay.innerText = target.toLocaleString(undefined, {
+            minimumFractionDigits: 2, maxFractionDigits: 2
+        });
+
+        if (!isNaN(achieved) && amount > 0) {
+            const repaymentRate = (achieved / amount) * 100;
+            rateDisplay.innerText = repaymentRate.toFixed(1) + "%";
+
+            let targetFilledPercentage = 0;
+            if (target > 0) {
+                targetFilledPercentage = (achieved / target) * 100;
+            } else if (target === 0 && achieved > 0) {
+                targetFilledPercentage = 100;
+            }
+
+            statusPct.innerText = targetFilledPercentage.toFixed(1) + "%";
+            if (targetFilledPercentage >= 100) {
+                achievementBox.classList.add('status-success');
+                statusTitle.innerText = "Target Fulfilled! 🎉";
+            } else {
+                achievementBox.classList.add('status-warning');
+                statusTitle.innerText = "Target Progress Deficit";
+            }
+
+            let structuralKpiRate = 0;
+            if (!isManualKpiMode) {
+                if (repaymentRate < 9.0) {
+                    structuralKpiRate = 0.00;
+                } else if (repaymentRate >= 9.0 && repaymentRate < 12.0) {
+                    structuralKpiRate = 0.30;
+                } else if (repaymentRate >= 12.0 && repaymentRate < 13.0) {
+                    structuralKpiRate = 0.40;
+                } else if (repaymentRate >= 13.0) {
+                    structuralKpiRate = 0.50;
+                }
+                kpiInputSelector.value = structuralKpiRate > 0 ? structuralKpiRate.toFixed(2) : "0.00";
+            } else {
+                structuralKpiRate = parseFloat(kpiInputSelector.value) || 0;
+            }
+
+            kpiRateLabel.innerText = structuralKpiRate.toFixed(2);
+            
+            const preciseBonusCalculated = achieved * (structuralKpiRate / 100);
+            kpiResult.innerText = Math.round(preciseBonusCalculated).toLocaleString();
+            kpiBox.classList.add('kpi-unlocked');
+        } else {
+            rateDisplay.innerText = "0.00%";
+            if (!isManualKpiMode) kpiInputSelector.value = "";
+        }
+    }
+</script>
+</body>
+</html>
