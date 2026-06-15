@@ -74,7 +74,6 @@
             color: #38bdf8;
         }
 
-        /* Responsive Layout Row - Guarantees pristine side-by-side alignment */
         .input-row {
             display: flex;
             gap: 1rem;
@@ -84,11 +83,11 @@
 
         .input-group {
             flex: 1;
-            min-width: 0; /* Prevents input blowout on small mobile screens */
+            min-width: 0;
         }
 
         .input-group.large-fill {
-            flex: 1.6; /* Gives slightly more horizontal breathing room to larger numbers */
+            flex: 1.6;
         }
 
         label {
@@ -141,10 +140,6 @@
             border-color: var(--primary);
             background-color: rgba(15, 23, 42, 0.8);
             box-shadow: 0 0 0 4px var(--focus-ring);
-        }
-
-        input::placeholder {
-            color: #475569;
         }
 
         .badge-container {
@@ -271,8 +266,7 @@
     
     <div class="formula-box">
         <strong>KPI Threshold Auto-Engine:</strong><br>
-        • Repayment Rate &lt; 9% &rarr; 0.00% KPI<br>
-        • Repayment Rate 9% - 11.9% &rarr; 0.30% KPI<br>
+        • Target Filled (≥100%) &rarr; Safe Minimum 0.30% KPI unlocked!<br>
         • Repayment Rate 12% - 12.9% &rarr; 0.40% KPI<br>
         • Repayment Rate &ge; 13% &rarr; 0.50% KPI
     </div>
@@ -423,16 +417,20 @@
                 statusTitle.innerText = "Target Progress Deficit";
             }
 
+            // MODIFIED KPI ALLOCATION LOGIC
             let structuralKpiRate = 0;
             if (!isManualKpiMode) {
-                if (repaymentRate < 9.0) {
-                    structuralKpiRate = 0.00;
-                } else if (repaymentRate >= 9.0 && repaymentRate < 12.0) {
-                    structuralKpiRate = 0.30;
-                } else if (repaymentRate >= 12.0 && repaymentRate < 13.0) {
-                    structuralKpiRate = 0.40;
-                } else if (repaymentRate >= 13.0) {
+                if (repaymentRate >= 13.0) {
                     structuralKpiRate = 0.50;
+                } else if (repaymentRate >= 12.0) {
+                    structuralKpiRate = 0.40;
+                } else if (targetFilledPercentage >= 100) {
+                    // Force minimum KPI rate if target target is cleared!
+                    structuralKpiRate = 0.30;
+                } else if (repaymentRate >= 9.0) {
+                    structuralKpiRate = 0.30;
+                } else {
+                    structuralKpiRate = 0.00;
                 }
                 kpiInputSelector.value = structuralKpiRate > 0 ? structuralKpiRate.toFixed(2) : "0.00";
             } else {
