@@ -3,450 +3,259 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KPI & Target Dashboard</title>
+    <title>KPI Target & Payout Calculator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --bg: #0f172a;
-            --card-bg: #1e293b;
-            --text: #f8fafc;
-            --text-light: #94a3b8;
-            --border: #334155;
-            --success: #10b981;
-            --success-bg: rgba(16, 185, 129, 0.1);
-            --warning: #f59e0b;
-            --warning-bg: rgba(245, 158, 11, 0.1);
-            --kpi-purple: #a78bfa;
-            --kpi-bg: rgba(139, 92, 246, 0.15);
-            --danger: #ef4444;
-            --focus-ring: rgba(79, 70, 229, 0.4);
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            box-sizing: border-box;
-        }
-
-        .dashboard-container {
-            background: var(--card-bg);
-            padding: 1.75rem 1.5rem;
-            border-radius: 20px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            width: 100%;
-            max-width: 500px;
-            border: 1px solid var(--border);
-            box-sizing: border-box;
-        }
-
-        h2 {
-            margin-top: 0;
-            color: var(--text);
-            font-size: 1.6rem;
-            text-align: center;
-            margin-bottom: 1.25rem;
-            font-weight: 700;
-            letter-spacing: -0.025em;
-        }
-
-        .formula-box {
-            background: rgba(15, 23, 42, 0.6);
-            padding: 1rem;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            color: var(--text-light);
-            text-align: left;
-            margin-bottom: 1.5rem;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            line-height: 1.5;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .formula-box strong {
-            color: #38bdf8;
-        }
-
-        .input-row {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.25rem;
-            width: 100%;
-        }
-
-        .input-group {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .input-group.large-fill {
-            flex: 1.6;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            font-size: 0.8rem;
-            color: var(--text-light);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-            width: 100%;
-        }
-
-        input {
-            width: 100%;
-            padding: 0.85rem 1rem;
-            background-color: rgba(15, 23, 42, 0.4);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            font-size: 1.05rem;
-            color: var(--text);
-            box-sizing: border-box;
-            transition: all 0.2s ease;
-        }
-
-        .input-wrapper input {
-            padding-right: 2.2rem;
-        }
-
-        .suffix {
-            position: absolute;
-            right: 0.85rem;
-            color: var(--text-light);
-            font-weight: 600;
-            pointer-events: none;
-            font-size: 0.95rem;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--primary);
-            background-color: rgba(15, 23, 42, 0.8);
-            box-shadow: 0 0 0 4px var(--focus-ring);
-        }
-
-        .badge-container {
-            margin-bottom: 1.25rem;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.35rem 0.75rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            border-radius: 20px;
-            background: #334155;
-            color: var(--text-light);
-            letter-spacing: 0.025em;
-            text-transform: uppercase;
-        }
-
-        .badge.active {
-            background: var(--primary);
-            color: var(--text);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-        }
-
-        .result-container {
-            margin-top: 1.25rem;
-            padding-top: 1.25rem;
-            border-top: 1px solid var(--border);
-            display: flex;
-            gap: 1rem;
-            text-align: center;
-        }
-
-        .result-box {
-            flex: 1;
-            background: rgba(15, 23, 42, 0.4);
-            padding: 1rem 0.5rem;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            min-width: 0;
-        }
-
-        .result-label {
-            font-size: 0.75rem;
-            color: var(--text-light);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.5rem;
-        }
-
-        .result-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #38bdf8;
-            margin: 0;
-            word-wrap: break-word;
-        }
-
-        .display-card {
-            margin-top: 1.25rem;
-            padding: 1.15rem;
-            border-radius: 14px;
-            text-align: center;
-            display: none;
-            border: 1px solid transparent;
-            transition: all 0.3s ease;
-        }
-
-        .display-card.status-success {
-            display: block;
-            background-color: var(--success-bg);
-            border-color: rgba(16, 185, 129, 0.3);
-            color: #34d399;
-        }
-
-        .display-card.status-warning {
-            display: block;
-            background-color: var(--warning-bg);
-            border-color: rgba(245, 158, 11, 0.3);
-            color: #fbbf24;
-        }
-
-        .display-card.kpi-unlocked {
-            display: block;
-            background-color: var(--kpi-bg);
-            border-color: rgba(167, 139, 250, 0.3);
-            color: var(--kpi-purple);
-            box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.1);
-        }
-
-        .status-title {
-            font-weight: 700;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.25rem;
-        }
-
-        .status-pct {
-            font-size: 1.85rem;
-            font-weight: 800;
-        }
-
-        .kpi-value {
-            font-size: 2.35rem;
-            font-weight: 900;
-            color: #c084fc;
-            margin: 0.25rem 0 0 0;
-        }
-
-        .error-message {
-            color: var(--danger);
-            font-size: 0.85rem;
-            margin-bottom: 1.25rem;
-            display: none;
-            font-weight: 500;
+        .calculator-font {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
 
-<div class="dashboard-container">
-    <h2>Performance Tracker</h2>
-    
-    <div class="formula-box">
-        <strong>KPI Threshold Auto-Engine:</strong><br>
-        • Target Filled (≥100%) &rarr; Safe Minimum 0.30% KPI unlocked!<br>
-        • Repayment Rate 12% - 12.9% &rarr; 0.40% KPI<br>
-        • Repayment Rate &ge; 13% &rarr; 0.50% KPI
-    </div>
-
-    <div class="input-row">
-        <div class="input-group large-fill">
-            <label for="delegateAmount">Delegated Amount</label>
-            <input type="number" id="delegateAmount" placeholder="e.g. 55960" min="0" step="any" oninput="calculateAll()">
-        </div>
-
-        <div class="input-group">
-            <label for="customPercentage">Target Weight</label>
-            <div class="input-wrapper">
-                <input type="number" id="customPercentage" value="11" min="0" max="100" step="any" oninput="calculateAll()">
-                <span class="suffix">%</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="input-row" style="margin-bottom: 0.75rem;">
-        <div class="input-group">
-            <label for="delegatedCases">Delegated Cases</label>
-            <input type="number" id="delegatedCases" placeholder="Enter case allocation count" min="0" step="any" oninput="calculateAll()">
-        </div>
-    </div>
-    
-    <div id="error" class="error-message">⚠️ Error: Delegated cases cannot be negative.</div>
-    <div class="badge-container"><span id="formulaBadge" class="badge">Awaiting Input Data</span></div>
-
-    <div class="input-row">
-        <div class="input-group large-fill">
-            <label for="achievedAmount">Actual Repayment Done</label>
-            <input type="number" id="achievedAmount" placeholder="Amount collected" min="0" step="any" oninput="calculateAll()">
-        </div>
-
-        <div class="input-group">
-            <label for="customKpi">KPI Override</label>
-            <div class="input-wrapper">
-                <input type="number" id="customKpi" placeholder="Calc" min="0" max="100" step="any" oninput="calculateAll(true)">
-                <span class="suffix">%</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="result-container">
-        <div class="result-box">
-            <div class="result-label">Today's Target</div>
-            <div class="result-value" id="targetResult">0.00</div>
-        </div>
-        <div class="result-box">
-            <div class="result-label">Repayment Rate</div>
-            <div class="result-value" id="repaymentRateResult">0.00%</div>
-        </div>
-    </div>
-
-    <div id="achievementBox" class="display-card">
-        <div id="statusTitle" class="status-title">Core Performance Progress</div>
-        <div id="statusPct" class="status-pct">0%</div>
-    </div>
-
-    <div id="kpiBox" class="display-card">
-        <div class="status-title">🏆 New KPI Yield (<span id="kpiRateLabel">0.00</span>%)</div>
-        <div id="kpiResult" class="kpi-value">0</div>
-    </div>
-</div>
-
-<script>
-    let isManualKpiMode = false;
-
-    function calculateAll(manualKpiTrigger = false) {
-        if (manualKpiTrigger) {
-            isManualKpiMode = true;
-        }
-
-        const amount = parseFloat(document.getElementById('delegateAmount').value);
-        const cases = parseFloat(document.getElementById('delegatedCases').value);
-        const achieved = parseFloat(document.getElementById('achievedAmount').value);
+    <div class="max-w-5xl mx-auto space-y-8">
         
-        let percentInput = parseFloat(document.getElementById('customPercentage').value);
-        if (isNaN(percentInput) || percentInput < 0) percentInput = 11; 
-        const pctMultiplier = percentInput / 100;
-
-        const resultDisplay = document.getElementById('targetResult');
-        const rateDisplay = document.getElementById('repaymentRateResult');
-        const errorDisplay = document.getElementById('error');
-        const badge = document.getElementById('formulaBadge');
-        
-        const achievementBox = document.getElementById('achievementBox');
-        const statusTitle = document.getElementById('statusTitle');
-        const statusPct = document.getElementById('statusPct');
-        
-        const kpiBox = document.getElementById('kpiBox');
-        const kpiResult = document.getElementById('kpiResult');
-        const kpiRateLabel = document.getElementById('kpiRateLabel');
-        const kpiInputSelector = document.getElementById('customKpi');
-
-        errorDisplay.style.display = 'none';
-        badge.className = 'badge';
-        badge.innerText = 'Awaiting Input Data';
-        achievementBox.className = 'display-card';
-        kpiBox.className = 'display-card';
-
-        if (isNaN(amount) || isNaN(cases)) {
-            resultDisplay.innerText = "0.00";
-            rateDisplay.innerText = "0.00%";
-            if (!isManualKpiMode) kpiInputSelector.value = "";
-            return;
-        }
-
-        if (cases < 0) {
-            errorDisplay.style.display = 'block';
-            resultDisplay.innerText = "—";
-            return;
-        }
-
-        let target = 0;
-        if (cases <= 220) {
-            target = (amount * pctMultiplier) * 0.90;
-            badge.innerText = "Cases ≤ 220 Applied";
-            badge.classList.add('active');
-        } else {
-            target = (amount / cases) * 220 * pctMultiplier * 0.90;
-            badge.innerText = "Cases > 220 Applied";
-            badge.classList.add('active');
-        }
-
-        resultDisplay.innerText = target.toLocaleString(undefined, {
-            minimumFractionDigits: 2, maxFractionDigits: 2
-        });
-
-        if (!isNaN(achieved) && amount > 0) {
-            const repaymentRate = (achieved / amount) * 100;
-            rateDisplay.innerText = repaymentRate.toFixed(1) + "%";
-
-            let targetFilledPercentage = 0;
-            if (target > 0) {
-                targetFilledPercentage = (achieved / target) * 100;
-            } else if (target === 0 && achieved > 0) {
-                targetFilledPercentage = 100;
-            }
-
-            statusPct.innerText = targetFilledPercentage.toFixed(1) + "%";
-            if (targetFilledPercentage >= 100) {
-                achievementBox.classList.add('status-success');
-                statusTitle.innerText = "Target Fulfilled! 🎉";
-            } else {
-                achievementBox.classList.add('status-warning');
-                statusTitle.innerText = "Target Progress Deficit";
-            }
-
-            // MODIFIED KPI ALLOCATION LOGIC
-            let structuralKpiRate = 0;
-            if (!isManualKpiMode) {
-                if (repaymentRate >= 13.0) {
-                    structuralKpiRate = 0.50;
-                } else if (repaymentRate >= 12.0) {
-                    structuralKpiRate = 0.40;
-                } else if (targetFilledPercentage >= 100) {
-                    // Force minimum KPI rate if target target is cleared!
-                    structuralKpiRate = 0.30;
-                } else if (repaymentRate >= 9.0) {
-                    structuralKpiRate = 0.30;
-                } else {
-                    structuralKpiRate = 0.00;
-                }
-                kpiInputSelector.value = structuralKpiRate > 0 ? structuralKpiRate.toFixed(2) : "0.00";
-            } else {
-                structuralKpiRate = parseFloat(kpiInputSelector.value) || 0;
-            }
-
-            kpiRateLabel.innerText = structuralKpiRate.toFixed(2);
+        <!-- Main Application Card -->
+        <div class="bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-2">KPI Target Calculator</h1>
+            <p class="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">Calculate your collection target and potential KPI payout (Bonus) in BDT.</p>
             
-            const preciseBonusCalculated = achieved * (structuralKpiRate / 100);
-            kpiResult.innerText = Math.round(preciseBonusCalculated).toLocaleString();
-            kpiBox.classList.add('kpi-unlocked');
-        } else {
-            rateDisplay.innerText = "0.00%";
-            if (!isManualKpiMode) kpiInputSelector.value = "";
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                
+                <!-- Input Section -->
+                <div class="space-y-4 sm:space-y-6">
+                    <h2 class="text-lg sm:text-xl font-semibold text-gray-800 border-b pb-2">1. Enter Data</h2>
+                    
+                    <div>
+                        <label for="delegatedAmount" class="block text-sm font-medium text-gray-700 mb-1">Delegated Amount (৳)</label>
+                        <input type="number" id="delegatedAmount" placeholder="e.g. 795566" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    
+                    <div>
+                        <label for="cases" class="block text-sm font-medium text-gray-700 mb-1">Total Cases</label>
+                        <input type="number" id="cases" placeholder="e.g. 306" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    
+                    <div>
+                        <label for="recoveredAmount" class="block text-sm font-medium text-gray-700 mb-1">Recovered Amount (৳)</label>
+                        <input type="number" id="recoveredAmount" placeholder="Enter your actual recovery" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                </div>
+                
+                <!-- Responsive Calculation Display -->
+                <div class="bg-black text-white p-4 sm:p-6 rounded-xl shadow-inner calculator-font flex flex-col justify-between items-center text-center overflow-hidden">
+                    <p class="text-xs sm:text-sm text-gray-400 mb-2 self-start uppercase tracking-wider">Target Calculation</p>
+                    
+                    <div class="w-full my-auto py-4">
+                        <div id="calcFormula" class="text-sm sm:text-lg text-gray-300 break-words leading-relaxed">
+                            ((... ÷ ...) × 220) × 12.5%
+                        </div>
+                        <div class="text-xl sm:text-2xl mt-2 text-gray-400">=</div>
+                        <div id="preciseResult" class="text-2xl sm:text-4xl text-orange-400 break-words font-extrabold mt-1">
+                            ৳ 0.00
+                        </div>
+                    </div>
+
+                    <p class="text-xs text-gray-500 mt-2 self-start text-left leading-normal">
+                        Formula: ((Delegated ÷ Cases) × 220) × 12.5% (when cases &gt; 220)
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Results & KPI Breakdown Card -->
+        <div class="bg-white p-4 sm:p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200">
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Target & KPI Results</h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+                <!-- Target 100% -->
+                <div class="bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-200">
+                    <p class="text-xs sm:text-sm font-medium text-gray-500">Target (100%)</p>
+                    <p id="target100" class="text-xl sm:text-2xl font-bold text-gray-950 mt-1 break-words">৳ 0.00</p>
+                </div>
+                <!-- Threshold 90% -->
+                <div class="bg-blue-50 p-4 sm:p-6 rounded-xl border border-blue-200">
+                    <p class="text-xs sm:text-sm font-medium text-blue-700">KPI Threshold (90%)</p>
+                    <p id="target90" class="text-xl sm:text-2xl font-bold text-blue-950 mt-1 break-words">৳ 0.00</p>
+                    <p class="text-xs text-blue-600 mt-1">Required to qualify</p>
+                </div>
+                <!-- Achievement -->
+                <div class="bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-200">
+                    <p class="text-xs sm:text-sm font-medium text-gray-500">Achievement Level</p>
+                    <p id="achievementLevel" class="text-xl sm:text-2xl font-bold text-gray-950 mt-1">0.00%</p>
+                </div>
+                <!-- KPI Status -->
+                <div id="kpiStatusCard" class="p-4 sm:p-6 rounded-xl border transition-colors bg-gray-50 border-gray-200">
+                    <p class="text-xs sm:text-sm font-medium">KPI Achieved?</p>
+                    <p id="kpiAchieved" class="text-xl sm:text-2xl font-bold mt-1 text-gray-500">No</p>
+                </div>
+            </div>
+
+            <!-- Detailed KPI Payout and Tiers -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+                
+                <!-- Tiers Explanation -->
+                <div class="lg:col-span-2 bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-200">
+                    <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-4">KPI Payout Tiers</h3>
+                    <ul class="space-y-3 text-xs sm:text-sm">
+                        <li class="flex items-center justify-between bg-white p-3 rounded-md border">
+                            <span>Less than 90% Target</span>
+                            <span class="font-bold text-gray-500">0.00% (No KPI)</span>
+                        </li>
+                        <li class="flex items-center justify-between bg-white p-3 rounded-md border" id="tier1Indicator">
+                            <span>90% to 100% Target</span>
+                            <span class="font-bold text-green-600">0.30% Commission</span>
+                        </li>
+                        <li class="flex items-center justify-between bg-white p-3 rounded-md border" id="tier2Indicator">
+                            <span>Over 100% to 110% Target</span>
+                            <span class="font-bold text-green-600">0.40% Commission</span>
+                        </li>
+                        <li class="flex items-center justify-between bg-white p-3 rounded-md border" id="tier3Indicator">
+                            <span>Over 110% to 120% Target</span>
+                            <span class="font-bold text-green-600">0.50% Commission</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Final Payout -->
+                <div class="bg-green-50 p-6 sm:p-8 rounded-xl border-2 border-green-200 text-center flex flex-col justify-center items-center">
+                    <p class="text-lg sm:text-xl font-semibold text-green-900">Total KPI Bonus</p>
+                    <p id="finalKpiBonus" class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-green-700 mt-2 mb-1 break-words">৳ 0.00</p>
+                    <p id="activeTierText" class="text-xs sm:text-sm text-green-600 mt-1">Enter details above to calculate</p>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const CASE_THRESHOLD = 220;
+        const KPI_QUALIFICATION_PCT = 0.90;
+
+        const KPI_TIERS = [
+            { upperAchievement: 1.00, rate: 0.0030 },
+            { upperAchievement: 1.10, rate: 0.0040 },
+            { upperAchievement: 1.20, rate: 0.0050 }
+        ];
+
+        const inputDelegated = document.getElementById('delegatedAmount');
+        const inputCases = document.getElementById('cases');
+        const inputRecovered = document.getElementById('recoveredAmount');
+
+        const calcFormula = document.getElementById('calcFormula');
+        const preciseResult = document.getElementById('preciseResult');
+
+        const displayTarget100 = document.getElementById('target100');
+        const displayTarget90 = document.getElementById('target90');
+        const displayAchievement = document.getElementById('achievementLevel');
+        const displayKpiStatusCard = document.getElementById('kpiStatusCard');
+        const displayKpiAchieved = document.getElementById('kpiAchieved');
+        const displayFinalKpiBonus = document.getElementById('finalKpiBonus');
+        const displayActiveTierText = document.getElementById('activeTierText');
+
+        const tierIndicators = {
+            1: document.getElementById('tier1Indicator'),
+            2: document.getElementById('tier2Indicator'),
+            3: document.getElementById('tier3Indicator')
+        };
+
+        function formatBDT(amount) {
+            return '৳ ' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
-    }
-</script>
+
+        function highlightTier(tierNumber) {
+            Object.values(tierIndicators).forEach(el => el.classList.remove('border-green-400', 'bg-green-50', 'ring-2', 'ring-green-200'));
+            if (tierIndicators[tierNumber]) {
+                tierIndicators[tierNumber].classList.add('border-green-400', 'bg-green-50', 'ring-2', 'ring-green-200');
+            }
+        }
+
+        function updateCalculator() {
+            const delegated = parseFloat(inputDelegated.value) || 0;
+            const cases = parseFloat(inputCases.value) || 0;
+            const recovered = parseFloat(inputRecovered.value) || 0;
+
+            let target100 = 0;
+            let target90 = 0;
+            let achievementPct = 0;
+            let kpiBonus = 0;
+            let activeTierText = "Enter details above to calculate";
+
+            if (delegated > 0 && cases > 0) {
+                if (cases > CASE_THRESHOLD) {
+                    target100 = ((delegated / cases) * 220) * 0.125;
+                    calcFormula.textContent = `(( ${delegated.toLocaleString()} ÷ ${cases.toLocaleString()} ) × 220) × 12.5%`;
+                } else {
+                    target100 = delegated * 0.125;
+                    calcFormula.textContent = `${delegated.toLocaleString()} × 12.5%`;
+                }
+                
+                preciseResult.textContent = formatBDT(target100);
+                target90 = target100 * KPI_QUALIFICATION_PCT;
+            } else {
+                calcFormula.textContent = "((... ÷ ...) × 220) × 12.5%";
+                preciseResult.textContent = "৳ 0.00";
+            }
+
+            if (target100 > 0 && recovered > 0) {
+                achievementPct = (recovered / target100);
+            }
+
+            const isKpiAchieved = achievementPct >= KPI_QUALIFICATION_PCT;
+            highlightTier(0);
+
+            if (isKpiAchieved) {
+                let applicableRate = 0;
+
+                if (achievementPct <= KPI_TIERS[0].upperAchievement) {
+                    applicableRate = KPI_TIERS[0].rate;
+                    highlightTier(1);
+                    activeTierText = "Tier 1: 0.30% Commission";
+                } else if (achievementPct <= KPI_TIERS[1].upperAchievement) {
+                    applicableRate = KPI_TIERS[1].rate;
+                    highlightTier(2);
+                    activeTierText = "Tier 2: 0.40% Commission";
+                } else {
+                    applicableRate = KPI_TIERS[2].rate;
+                    highlightTier(3);
+                    activeTierText = "Tier 3: 0.50% Commission";
+                }
+
+                kpiBonus = recovered * applicableRate;
+            } else if (target100 > 0 && recovered > 0) {
+                activeTierText = "Below 90% Target (No Bonus)";
+            }
+
+            displayTarget100.textContent = formatBDT(target100);
+            displayTarget90.textContent = formatBDT(target90);
+            displayAchievement.textContent = (achievementPct * 100).toFixed(2) + "%";
+            displayKpiAchieved.textContent = isKpiAchieved ? "Yes" : "No";
+
+            if (isKpiAchieved) {
+                displayKpiStatusCard.className = "p-4 sm:p-6 rounded-xl border border-green-200 bg-green-50 text-green-950";
+                displayKpiAchieved.className = "text-xl sm:text-2xl font-bold mt-1 text-green-700";
+            } else if (delegated > 0 && cases > 0) {
+                displayKpiStatusCard.className = "p-4 sm:p-6 rounded-xl border border-red-200 bg-red-50 text-red-950";
+                displayKpiAchieved.className = "text-xl sm:text-2xl font-bold mt-1 text-red-700";
+            } else {
+                displayKpiStatusCard.className = "p-4 sm:p-6 rounded-xl border border-gray-200 bg-gray-50 text-gray-950";
+                displayKpiAchieved.className = "text-xl sm:text-2xl font-bold mt-1 text-gray-500";
+            }
+
+            displayFinalKpiBonus.textContent = formatBDT(kpiBonus);
+            displayActiveTierText.textContent = activeTierText;
+        }
+
+        inputDelegated.addEventListener('input', updateCalculator);
+        inputCases.addEventListener('input', updateCalculator);
+        inputRecovered.addEventListener('input', updateCalculator);
+    </script>
 </body>
 </html>
