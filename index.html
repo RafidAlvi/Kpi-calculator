@@ -188,7 +188,7 @@
         /* Table Section */
         .table-container {
             width: 100%;
-            max-width: 1000px;
+            max-width: 1100px;
             background-color: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: 16px;
@@ -214,6 +214,7 @@
             border-radius: 6px;
             width: auto;
             margin-bottom: 0;
+            cursor: pointer;
         }
 
         .clear-history:hover {
@@ -249,6 +250,39 @@
             padding: 1.5rem;
         }
 
+        .action-btns {
+            display: flex;
+            gap: 0.35rem;
+        }
+
+        .action-btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            width: auto;
+            margin-bottom: 0;
+        }
+
+        .edit-btn {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background-color: #2563eb;
+        }
+
+        .delete-btn {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background-color: #dc2626;
+        }
+
         .total-summary {
             display: flex;
             justify-content: space-between;
@@ -269,7 +303,7 @@
 <body>
 
     <div class="container">
-        <h1>S2LR-CO Target Calculator</h1>
+        <h1 id="formTitle">S2LR-CO Target Calculator</h1>
 
         <!-- Screenshot Upload Section -->
         <div class="upload-section" onclick="document.getElementById('screenshotInput').click()">
@@ -315,7 +349,8 @@
 
         <div id="kpiOutput" class="output-box">Calculated kpi</div>
 
-        <button onclick="saveToMemory()" style="background-color: #059669; margin-bottom: 0;">Save to memory</button>
+        <button id="saveButton" onclick="saveToMemory()" style="background-color: #059669; margin-bottom: 0;">Save to memory</button>
+        <button id="cancelEditButton" onclick="cancelEdit()" style="background-color: #64748b; margin-top: 0.5rem; margin-bottom: 0; display: none;">Cancel Edit</button>
     </div>
 
     <div class="table-container">
@@ -334,11 +369,12 @@
                     <th>Target Achieved</th>
                     <th>Achievement %</th>
                     <th>KPI (Tk)</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="historyTableBody">
                 <tr id="emptyRow">
-                    <td colspan="8" class="empty-row">No records saved yet</td>
+                    <td colspan="9" class="empty-row">No records saved yet</td>
                 </tr>
             </tbody>
         </table>
@@ -355,8 +391,9 @@
         let currentAchievementPercent = 0;
         let currentAmount = 0;
         let currentCases = 0;
+        let editingIndex = null;
 
-        const STORAGE_KEY = 's2lr_co_saved_records_v7';
+        const STORAGE_KEY = 's2lr_co_saved_records_v8';
 
         window.addEventListener('DOMContentLoaded', () => {
             const today = new Date().toISOString().split('T')[0];
@@ -548,6 +585,7 @@
 
             const record = {
                 date: formattedDate,
+                rawDate: dateInput,
                 amount: currentAmount,
                 cases: currentCases,
                 target: currentTarget,
@@ -558,11 +596,17 @@
             };
 
             let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            records.unshift(record);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 
+            if (editingIndex !== null) {
+                records[editingIndex] = record;
+                cancelEdit();
+            } else {
+                records.unshift(record);
+            }
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
             loadHistory();
-            alert('Saved successfully!');
+            alert(editingIndex !== null ? 'Record updated successfully!' : 'Saved successfully!');
         }
 
         function loadHistory() {
@@ -572,7 +616,7 @@
             const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 
             if (records.length === 0) {
-                tbody.innerHTML = '<tr id="emptyRow"><td colspan="8" class="empty-row">No records saved yet</td></tr>';
+                tbody.innerHTML = '<tr id="emptyRow"><td colspan="9" class="empty-row">No records saved yet</td></tr>';
                 totalSummaryBox.style.display = 'none';
                 return;
             }
@@ -580,7 +624,7 @@
             tbody.innerHTML = '';
             let sumKpiTk = 0;
 
-            records.forEach(rec => {
+            records.forEach((rec, index) => {
                 sumKpiTk += (rec.kpiTk || 0);
                 const ninetyVal = rec.ninetyPercent !== undefined ? rec.ninetyPercent : (rec.target * 0.90);
                 const tr = document.createElement('tr');
@@ -593,6 +637,12 @@
                     <td>${rec.achieved ? rec.achieved.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                     <td>${rec.achievementPercent !== undefined ? rec.achievementPercent.toFixed(2) + '%' : '-'}</td>
                     <td>${rec.kpiTk !== undefined ? rec.kpiTk.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' Tk' : '-'}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="action-btn edit-btn" onclick="editRecord(${index})">Edit</button>
+                            <button class="action-btn delete-btn" onclick="deleteRecord(${index})">Remove</button>
+                        </div>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -601,9 +651,64 @@
             totalSummaryBox.style.display = 'flex';
         }
 
+        function editRecord(index) {
+            const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const rec = records[index];
+            if (!rec) return;
+
+            editingIndex = index;
+            document.getElementById('formTitle').textContent = `Edit Record (${rec.date})`;
+            document.getElementById('saveButton').textContent = 'Update Memory';
+            document.getElementById('cancelEditButton').style.display = 'block';
+
+            if (rec.rawDate) {
+                document.getElementById('recordDate').value = rec.rawDate;
+            }
+            document.getElementById('delegatedAmount').value = rec.amount;
+            document.getElementById('delegatedCases').value = rec.cases;
+            document.getElementById('achievedTarget').value = rec.achieved;
+
+            calculateTarget();
+            calculateKpi();
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            editingIndex = null;
+            document.getElementById('formTitle').textContent = 'S2LR-CO Target Calculator';
+            document.getElementById('saveButton').textContent = 'Save to memory';
+            document.getElementById('cancelEditButton').style.display = 'none';
+
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('recordDate').value = today;
+            document.getElementById('delegatedAmount').value = '';
+            document.getElementById('delegatedCases').value = '';
+            document.getElementById('achievedTarget').value = '';
+            document.getElementById('targetOutput').textContent = 'Calculated target';
+            document.getElementById('targetOutput').classList.remove('has-value');
+            document.getElementById('kpiOutput').textContent = 'Calculated kpi';
+            document.getElementById('kpiOutput').classList.remove('has-value');
+        }
+
+        function deleteRecord(index) {
+            if (confirm('Are you sure you want to remove this record?')) {
+                let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                records.splice(index, 1);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+                if (editingIndex === index) {
+                    cancelEdit();
+                } else if (editingIndex !== null && editingIndex > index) {
+                    editingIndex--;
+                }
+                loadHistory();
+            }
+        }
+
         function clearHistory() {
             if (confirm('Are you sure you want to clear all saved history?')) {
                 localStorage.removeItem(STORAGE_KEY);
+                cancelEdit();
                 loadHistory();
             }
         }
