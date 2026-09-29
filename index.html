@@ -6,6 +6,10 @@
     <title>S2LR-CO Target Calculator</title>
     <!-- Include Tesseract.js for browser-based OCR image text recognition -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- Include SheetJS for Excel (.xlsx) export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Include html2canvas for PNG export -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -203,18 +207,57 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
 
-        .clear-history {
+        .table-actions {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .table-action-btn {
             font-size: 0.75rem;
             background: transparent;
-            color: #ef4444;
-            border: 1px solid #ef4444;
-            padding: 0.25rem 0.5rem;
+            padding: 0.35rem 0.6rem;
             border-radius: 6px;
             width: auto;
             margin-bottom: 0;
             cursor: pointer;
+            border: 1px solid;
+        }
+
+        .download-json-btn {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .download-json-btn:hover {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .download-excel-btn {
+            color: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .download-excel-btn:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .download-png-btn {
+            color: #f59e0b;
+            border-color: #f59e0b;
+        }
+
+        .download-png-btn:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .clear-history {
+            color: #ef4444;
+            border-color: #ef4444;
         }
 
         .clear-history:hover {
@@ -353,10 +396,15 @@
         <button id="cancelEditButton" onclick="cancelEdit()" style="background-color: #64748b; margin-top: 0.5rem; margin-bottom: 0; display: none;">Cancel Edit</button>
     </div>
 
-    <div class="table-container">
+    <div class="table-container" id="exportTableContainer">
         <div class="table-title">
             <span>Saved Records</span>
-            <button class="clear-history" onclick="clearHistory()">Clear History</button>
+            <div class="table-actions">
+                <button class="table-action-btn download-excel-btn" onclick="downloadExcel()">Download XLSX</button>
+                <button class="table-action-btn download-png-btn" onclick="downloadPng()">Save PNG</button>
+                <button class="table-action-btn download-json-btn" onclick="downloadData()">Download JSON</button>
+                <button class="table-action-btn clear-history" onclick="clearHistory()">Clear History</button>
+            </div>
         </div>
         <table>
             <thead>
@@ -369,7 +417,7 @@
                     <th>Target Achieved</th>
                     <th>Achievement %</th>
                     <th>KPI (Tk)</th>
-                    <th>Actions</th>
+                    <th class="action-col">Actions</th>
                 </tr>
             </thead>
             <tbody id="historyTableBody">
@@ -393,7 +441,7 @@
         let currentCases = 0;
         let editingIndex = null;
 
-        const STORAGE_KEY = 's2lr_co_saved_records_v8';
+        const STORAGE_KEY = 's2lr_co_saved_records_v9';
 
         window.addEventListener('DOMContentLoaded', () => {
             const today = new Date().toISOString().split('T')[0];
@@ -401,7 +449,7 @@
             loadHistory();
         });
 
-        // OCR Screenshot Processing function
+        // OCR Screenshot Processing function with Date detection
         async function processScreenshot(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -421,7 +469,7 @@
 
                 const text = result.data.text;
                 parseExtractedText(text);
-                statusDiv.textContent = 'Successfully extracted numbers from screenshot!';
+                statusDiv.textContent = 'Successfully extracted data and date from screenshot!';
                 setTimeout(() => { statusDiv.style.display = 'none'; }, 3000);
             } catch (error) {
                 console.error(error);
@@ -429,18 +477,38 @@
             }
         }
 
-        // Precise Text Parser mapped to your screenshot layout
         function parseExtractedText(text) {
             const lines = text.split('\n');
             let foundDelegatedCases = null;
             let foundDelegatedAmount = null;
             let foundRepaidAmount = null;
+            let foundDate = null;
+
+            // Month mapping helper
+            const months = {
+                jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+                jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+            };
 
             for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].toLowerCase();
-                const combinedLine = (lines[i] + ' ' + (lines[i+1] || '')).replace(/,/g, '');
+                const rawLine = lines[i];
+                const line = rawLine.toLowerCase();
+                const combinedLine = (rawLine + ' ' + (lines[i+1] || '')).replace(/,/g, '');
 
-                // 1. Total Repaid Amount -> Achieved Target
+                // Detect Date pattern like "Sep 24, 2026" or "Sep 23,2026"
+                if (!foundDate) {
+                    const dateMatch = rawLine.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*(\d{1,2}),?\s*(\d{4})/i);
+                    if (dateMatch) {
+                        const mStr = dateMatch[1].substring(0, 3).toLowerCase();
+                        const monthNum = months[mStr];
+                        const dayNum = dateMatch[2].padStart(2, '0');
+                        const yearNum = dateMatch[3];
+                        if (monthNum) {
+                            foundDate = `${yearNum}-${monthNum}-${dayNum}`;
+                        }
+                    }
+                }
+
                 if (line.includes('total repaid amount') || line.includes('repaid amount')) {
                     const numbers = combinedLine.match(/\d+(\.\d+)?/g);
                     if (numbers) {
@@ -451,7 +519,6 @@
                     }
                 }
 
-                // 2. Delegated Cases -> Number of cases
                 if (line.includes('delegated cases') && !line.includes('today') && !line.includes('amount')) {
                     const numbers = combinedLine.match(/\d+/g);
                     if (numbers) {
@@ -462,7 +529,6 @@
                     }
                 }
 
-                // 3. Delegated amount -> Delegated Amount
                 if (line.includes('delegated amount')) {
                     const numbers = combinedLine.match(/\d+(\.\d+)?/g);
                     if (numbers) {
@@ -474,26 +540,41 @@
                 }
             }
 
-            // Fallbacks if text lines were split across OCR reads
             const allCleanText = text.replace(/,/g, '');
             const allNumbers = allCleanText.match(/\d+(\.\d+)?/g)?.map(Number) || [];
 
+            // Fallback for general date format search if not caught line-by-line
+            if (!foundDate) {
+                const globalDateMatch = text.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*(\d{1,2}),?\s*(\d{4})/i);
+                if (globalDateMatch) {
+                    const mStr = globalDateMatch[1].substring(0, 3).toLowerCase();
+                    const monthNum = months[mStr];
+                    const dayNum = globalDateMatch[2].padStart(2, '0');
+                    const yearNum = globalDateMatch[3];
+                    if (monthNum) {
+                        foundDate = `${yearNum}-${monthNum}-${dayNum}`;
+                    }
+                }
+            }
+
             if (!foundDelegatedAmount) {
-                const amt = allNumbers.find(n => n > 100000); // e.g. 632459
+                const amt = allNumbers.find(n => n > 100000);
                 if (amt) foundDelegatedAmount = amt;
             }
 
             if (!foundDelegatedCases) {
-                const cas = allNumbers.find(n => n > 50 && n < 1000); // e.g. 238
+                const cas = allNumbers.find(n => n > 50 && n < 1000);
                 if (cas) foundDelegatedCases = cas;
             }
 
             if (!foundRepaidAmount) {
-                const rep = allNumbers.find(n => n >= 1000 && n <= 50000); // e.g. 11551
+                const rep = allNumbers.find(n => n >= 1000 && n <= 50000);
                 if (rep) foundRepaidAmount = rep;
             }
 
-            // Assign values to input fields
+            if (foundDate) {
+                document.getElementById('recordDate').value = foundDate;
+            }
             if (foundDelegatedAmount) {
                 document.getElementById('delegatedAmount').value = foundDelegatedAmount;
             }
@@ -504,7 +585,6 @@
                 document.getElementById('achievedTarget').value = foundRepaidAmount;
             }
 
-            // Automatically run calculations
             if (foundDelegatedAmount && foundDelegatedCases) {
                 calculateTarget();
             }
@@ -637,7 +717,7 @@
                     <td>${rec.achieved ? rec.achieved.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
                     <td>${rec.achievementPercent !== undefined ? rec.achievementPercent.toFixed(2) + '%' : '-'}</td>
                     <td>${rec.kpiTk !== undefined ? rec.kpiTk.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' Tk' : '-'}</td>
-                    <td>
+                    <td class="action-col">
                         <div class="action-btns">
                             <button class="action-btn edit-btn" onclick="editRecord(${index})">Edit</button>
                             <button class="action-btn delete-btn" onclick="deleteRecord(${index})">Remove</button>
@@ -649,6 +729,72 @@
 
             totalKpiAmount.textContent = sumKpiTk.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' Tk';
             totalSummaryBox.style.display = 'flex';
+        }
+
+        function downloadData() {
+            const records = localStorage.getItem(STORAGE_KEY) || '[]';
+            const blob = new Blob([records], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `s2lr_co_records_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadExcel() {
+            const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            if (records.length === 0) {
+                alert('No records available to export.');
+                return;
+            }
+
+            const formattedData = records.map(rec => ({
+                "Date": rec.date,
+                "Delegated Amount": rec.amount,
+                "Delegated Cases": rec.cases,
+                "Target": Number(rec.target.toFixed(2)),
+                "90% Target": Number((rec.ninetyPercent || rec.target * 0.90).toFixed(2)),
+                "Target Achieved": rec.achieved,
+                "Achievement %": Number(rec.achievementPercent.toFixed(2)),
+                "KPI (Tk)": Number(rec.kpiTk.toFixed(2))
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(formattedData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "S2LR-CO Records");
+            XLSX.writeFile(workbook, `s2lr_co_records_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        function downloadPng() {
+            const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            if (records.length === 0) {
+                alert('No records available to export.');
+                return;
+            }
+
+            const container = document.getElementById('exportTableContainer');
+            
+            const actionElements = container.querySelectorAll('.action-col');
+            actionElements.forEach(el => el.style.display = 'none');
+
+            html2canvas(container, {
+                backgroundColor: '#1e293b',
+                scale: 2
+            }).then(canvas => {
+                actionElements.forEach(el => el.style.display = '');
+
+                const link = document.createElement('a');
+                link.download = `s2lr_co_records_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                actionElements.forEach(el => el.style.display = '');
+                console.error(err);
+                alert('Error generating PNG image.');
+            });
         }
 
         function editRecord(index) {
