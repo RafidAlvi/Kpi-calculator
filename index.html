@@ -189,6 +189,46 @@
             margin: 1.5rem 0;
         }
 
+        /* Allowances Box */
+        .allowance-box {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .allowance-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            text-align: center;
+        }
+
+        .allowance-options {
+            display: flex;
+            justify-content: space-around;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .allowance-option {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .allowance-option input[type="checkbox"] {
+            width: 1rem;
+            height: 1rem;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
         /* Table Section */
         .table-container {
             width: 100%;
@@ -326,6 +366,28 @@
             background-color: #dc2626;
         }
 
+        .salary-config {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .salary-config label {
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+
+        .salary-config input {
+            padding: 0.5rem;
+            font-size: 0.9rem;
+        }
+
         .total-summary {
             display: flex;
             justify-content: space-between;
@@ -333,13 +395,21 @@
             background-color: var(--input-bg);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 1rem 1.25rem;
-            font-size: 1rem;
-            font-weight: 700;
+            padding: 0.875rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
         }
 
         .total-summary span:last-child {
             color: var(--accent);
+        }
+
+        .grand-total {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-color: var(--accent);
+            font-weight: 700;
+            font-size: 1.05rem;
         }
     </style>
 </head>
@@ -357,7 +427,23 @@
 
         <div class="form-group">
             <label for="recordDate">Record Date</label>
-            <input type="date" id="recordDate">
+            <input type="date" id="recordDate" onchange="onDateChanged()">
+        </div>
+
+        <!-- Allowance Selector -->
+        <div class="allowance-box">
+            <div class="allowance-title">Daily Allowance Selection</div>
+            <div class="allowance-options">
+                <label class="allowance-option">
+                    <input type="checkbox" id="fridayAllowance" value="700"> Friday (700)
+                </label>
+                <label class="allowance-option">
+                    <input type="checkbox" id="saturdayAllowance" value="350"> Saturday (350)
+                </label>
+                <label class="allowance-option">
+                    <input type="checkbox" id="festivalAllowance" value="700"> Festival (700)
+                </label>
+            </div>
         </div>
 
         <div class="form-group">
@@ -392,8 +478,9 @@
 
         <div id="kpiOutput" class="output-box">Calculated kpi</div>
 
-        <button id="saveButton" onclick="saveToMemory()" style="background-color: #059669; margin-bottom: 0;">Save to memory</button>
-        <button id="cancelEditButton" onclick="cancelEdit()" style="background-color: #64748b; margin-top: 0.5rem; margin-bottom: 0; display: none;">Cancel Edit</button>
+        <button id="saveButton" onclick="saveToMemory()" style="background-color: #059669; margin-bottom: 0.5rem;">Save to memory</button>
+        <button onclick="saveDayOff()" style="background-color: #334155; margin-bottom: 0.5rem;">🏖️ Day Off (0 KPI Day)</button>
+        <button id="cancelEditButton" onclick="cancelEdit()" style="background-color: #64748b; margin-top: 0; margin-bottom: 0; display: none;">Cancel Edit</button>
     </div>
 
     <div class="table-container" id="exportTableContainer">
@@ -406,10 +493,18 @@
                 <button class="table-action-btn clear-history" onclick="clearHistory()">Clear History</button>
             </div>
         </div>
+
+        <!-- Editable Base Salary Config -->
+        <div class="salary-config">
+            <label for="baseSalaryInput">Base Salary (Tk):</label>
+            <input type="number" id="baseSalaryInput" value="14400" onchange="loadHistory()" step="any">
+        </div>
+
         <table>
             <thead>
                 <tr>
                     <th>Date</th>
+                    <th>Allowance (Tk)</th>
                     <th>Delegated Amount</th>
                     <th>Delegated Cases</th>
                     <th>Target</th>
@@ -422,13 +517,26 @@
             </thead>
             <tbody id="historyTableBody">
                 <tr id="emptyRow">
-                    <td colspan="9" class="empty-row">No records saved yet</td>
+                    <td colspan="10" class="empty-row">No records saved yet</td>
                 </tr>
             </tbody>
         </table>
-        <div class="total-summary" id="totalSummaryBox" style="display: none;">
+
+        <div class="total-summary" id="totalKpiSummaryBox" style="display: none;">
             <span>Total KPI (Tk):</span>
             <span id="totalKpiAmount">0.00 Tk</span>
+        </div>
+        <div class="total-summary" id="totalAllowanceSummaryBox" style="display: none;">
+            <span>Total Allowance (Tk):</span>
+            <span id="totalAllowanceAmount">0.00 Tk</span>
+        </div>
+        <div class="total-summary" id="baseSalarySummaryBox" style="display: none;">
+            <span>Base Salary (Tk):</span>
+            <span id="baseSalaryAmount">14,400.00 Tk</span>
+        </div>
+        <div class="total-summary grand-total" id="grandTotalSummaryBox" style="display: none; margin-bottom: 0;">
+            <span>Grand Total Payout (Tk):</span>
+            <span id="grandTotalAmount">0.00 Tk</span>
         </div>
     </div>
 
@@ -441,15 +549,30 @@
         let currentCases = 0;
         let editingIndex = null;
 
-        const STORAGE_KEY = 's2lr_co_saved_records_v9';
+        const STORAGE_KEY = 's2lr_co_saved_records_v11';
 
         window.addEventListener('DOMContentLoaded', () => {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('recordDate').value = today;
+            checkAndSetAllowancesByDate(today);
             loadHistory();
         });
 
-        // OCR Screenshot Processing function with Date detection
+        function onDateChanged() {
+            const dateVal = document.getElementById('recordDate').value;
+            if (dateVal) {
+                checkAndSetAllowancesByDate(dateVal);
+            }
+        }
+
+        function checkAndSetAllowancesByDate(dateString) {
+            const d = new Date(dateString + 'T00:00:00');
+            const dayOfWeek = d.getDay(); // 5 = Friday, 6 = Saturday
+
+            document.getElementById('fridayAllowance').checked = (dayOfWeek === 5);
+            document.getElementById('saturdayAllowance').checked = (dayOfWeek === 6);
+        }
+
         async function processScreenshot(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -484,7 +607,6 @@
             let foundRepaidAmount = null;
             let foundDate = null;
 
-            // Month mapping helper
             const months = {
                 jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
                 jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
@@ -495,7 +617,6 @@
                 const line = rawLine.toLowerCase();
                 const combinedLine = (rawLine + ' ' + (lines[i+1] || '')).replace(/,/g, '');
 
-                // Detect Date pattern like "Sep 24, 2026" or "Sep 23,2026"
                 if (!foundDate) {
                     const dateMatch = rawLine.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*(\d{1,2}),?\s*(\d{4})/i);
                     if (dateMatch) {
@@ -522,7 +643,7 @@
                 if (line.includes('delegated cases') && !line.includes('today') && !line.includes('amount')) {
                     const numbers = combinedLine.match(/\d+/g);
                     if (numbers) {
-                        const validNums = numbers.map(Number).filter(n => n > 0 && n < 10000);
+                        const validNums = numbers.map(Number).filter(n => n > 0 && n < 1000);
                         if (validNums.length > 0) {
                             foundDelegatedCases = validNums[validNums.length - 1];
                         }
@@ -543,7 +664,6 @@
             const allCleanText = text.replace(/,/g, '');
             const allNumbers = allCleanText.match(/\d+(\.\d+)?/g)?.map(Number) || [];
 
-            // Fallback for general date format search if not caught line-by-line
             if (!foundDate) {
                 const globalDateMatch = text.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*(\d{1,2}),?\s*(\d{4})/i);
                 if (globalDateMatch) {
@@ -574,6 +694,7 @@
 
             if (foundDate) {
                 document.getElementById('recordDate').value = foundDate;
+                checkAndSetAllowancesByDate(foundDate);
             }
             if (foundDelegatedAmount) {
                 document.getElementById('delegatedAmount').value = foundDelegatedAmount;
@@ -646,12 +767,30 @@
             kpiBox.classList.add('has-value');
         }
 
+        function getSelectedAllowance() {
+            let allowance = 0;
+            if (document.getElementById('fridayAllowance').checked) allowance += 700;
+            if (document.getElementById('saturdayAllowance').checked) allowance += 350;
+            if (document.getElementById('festivalAllowance').checked) allowance += 700;
+            return allowance;
+        }
+
         function saveToMemory() {
             if (currentTarget === 0) {
                 alert('Please calculate target before saving.');
                 return;
             }
 
+            const record = buildRecordObject(currentAmount, currentCases, currentTarget, currentAchieved, currentAchievementPercent, currentKpiTk);
+            saveRecordToStorage(record);
+        }
+
+        function saveDayOff() {
+            const record = buildRecordObject(0, 0, 0, 0, 0, 0, 'Day Off (0 KPI)');
+            saveRecordToStorage(record);
+        }
+
+        function buildRecordObject(amount, cases, target, achieved, achievementPercent, kpiTk, customNote = null) {
             const dateInput = document.getElementById('recordDate').value;
             let formattedDate = dateInput;
             if (dateInput) {
@@ -663,18 +802,27 @@
                 formattedDate = new Date().toLocaleDateString();
             }
 
-            const record = {
+            const allowance = getSelectedAllowance();
+
+            return {
                 date: formattedDate,
                 rawDate: dateInput,
-                amount: currentAmount,
-                cases: currentCases,
-                target: currentTarget,
-                ninetyPercent: currentTarget * 0.90,
-                achieved: currentAchieved,
-                achievementPercent: currentAchievementPercent,
-                kpiTk: currentKpiTk
+                allowance: allowance,
+                friday: document.getElementById('fridayAllowance').checked,
+                saturday: document.getElementById('saturdayAllowance').checked,
+                festival: document.getElementById('festivalAllowance').checked,
+                amount: amount,
+                cases: cases,
+                target: target,
+                ninetyPercent: target * 0.90,
+                achieved: achieved,
+                achievementPercent: achievementPercent,
+                kpiTk: kpiTk,
+                customNote: customNote
             };
+        }
 
+        function saveRecordToStorage(record) {
             let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 
             if (editingIndex !== null) {
@@ -691,44 +839,84 @@
 
         function loadHistory() {
             const tbody = document.getElementById('historyTableBody');
-            const totalSummaryBox = document.getElementById('totalSummaryBox');
+            const totalKpiSummaryBox = document.getElementById('totalKpiSummaryBox');
             const totalKpiAmount = document.getElementById('totalKpiAmount');
+            const totalAllowanceSummaryBox = document.getElementById('totalAllowanceSummaryBox');
+            const totalAllowanceAmount = document.getElementById('totalAllowanceAmount');
+            const baseSalarySummaryBox = document.getElementById('baseSalarySummaryBox');
+            const baseSalaryAmount = document.getElementById('baseSalaryAmount');
+            const grandTotalSummaryBox = document.getElementById('grandTotalSummaryBox');
+            const grandTotalAmount = document.getElementById('grandTotalAmount');
+            
             const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const baseSalary = parseFloat(document.getElementById('baseSalaryInput').value) || 0;
 
             if (records.length === 0) {
-                tbody.innerHTML = '<tr id="emptyRow"><td colspan="9" class="empty-row">No records saved yet</td></tr>';
-                totalSummaryBox.style.display = 'none';
+                tbody.innerHTML = '<tr id="emptyRow"><td colspan="10" class="empty-row">No records saved yet</td></tr>';
+                totalKpiSummaryBox.style.display = 'none';
+                totalAllowanceSummaryBox.style.display = 'none';
+                baseSalarySummaryBox.style.display = 'none';
+                grandTotalSummaryBox.style.display = 'none';
                 return;
             }
 
             tbody.innerHTML = '';
             let sumKpiTk = 0;
+            let sumAllowance = 0;
 
             records.forEach((rec, index) => {
                 sumKpiTk += (rec.kpiTk || 0);
+                sumAllowance += (rec.allowance || 0);
                 const ninetyVal = rec.ninetyPercent !== undefined ? rec.ninetyPercent : (rec.target * 0.90);
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${rec.date}</td>
-                    <td>${rec.amount.toLocaleString()}</td>
-                    <td>${rec.cases}</td>
-                    <td>${rec.target.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                    <td>${ninetyVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                    <td>${rec.achieved ? rec.achieved.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
-                    <td>${rec.achievementPercent !== undefined ? rec.achievementPercent.toFixed(2) + '%' : '-'}</td>
-                    <td>${rec.kpiTk !== undefined ? rec.kpiTk.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' Tk' : '-'}</td>
-                    <td class="action-col">
-                        <div class="action-btns">
-                            <button class="action-btn edit-btn" onclick="editRecord(${index})">Edit</button>
-                            <button class="action-btn delete-btn" onclick="deleteRecord(${index})">Remove</button>
-                        </div>
-                    </td>
-                `;
+
+                if (rec.customNote) {
+                    tr.innerHTML = `
+                        <td>${rec.date}</td>
+                        <td>${rec.allowance ? rec.allowance.toLocaleString() + ' Tk' : '-'}</td>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted); font-style: italic;">${rec.customNote}</td>
+                        <td>0.00 Tk</td>
+                        <td class="action-col">
+                            <div class="action-btns">
+                                <button class="action-btn edit-btn" onclick="editRecord(${index})">Edit</button>
+                                <button class="action-btn delete-btn" onclick="deleteRecord(${index})">Remove</button>
+                            </div>
+                        </td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td>${rec.date}</td>
+                        <td>${rec.allowance ? rec.allowance.toLocaleString() + ' Tk' : '-'}</td>
+                        <td>${rec.amount.toLocaleString()}</td>
+                        <td>${rec.cases}</td>
+                        <td>${rec.target.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td>${ninetyVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                        <td>${rec.achieved ? rec.achieved.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '-'}</td>
+                        <td>${rec.achievementPercent !== undefined ? rec.achievementPercent.toFixed(2) + '%' : '-'}</td>
+                        <td>${rec.kpiTk !== undefined ? rec.kpiTk.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' Tk' : '-'}</td>
+                        <td class="action-col">
+                            <div class="action-btns">
+                                <button class="action-btn edit-btn" onclick="editRecord(${index})">Edit</button>
+                                <button class="action-btn delete-btn" onclick="deleteRecord(${index})">Remove</button>
+                            </div>
+                        </td>
+                    `;
+                }
                 tbody.appendChild(tr);
             });
 
             totalKpiAmount.textContent = sumKpiTk.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' Tk';
-            totalSummaryBox.style.display = 'flex';
+            totalKpiSummaryBox.style.display = 'flex';
+
+            totalAllowanceAmount.textContent = sumAllowance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' Tk';
+            totalAllowanceSummaryBox.style.display = 'flex';
+
+            baseSalaryAmount.textContent = baseSalary.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' Tk';
+            baseSalarySummaryBox.style.display = 'flex';
+
+            const grandTotal = sumKpiTk + sumAllowance + baseSalary;
+            grandTotalAmount.textContent = grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' Tk';
+            grandTotalSummaryBox.style.display = 'flex';
         }
 
         function downloadData() {
@@ -753,13 +941,15 @@
 
             const formattedData = records.map(rec => ({
                 "Date": rec.date,
+                "Allowance (Tk)": rec.allowance || 0,
                 "Delegated Amount": rec.amount,
                 "Delegated Cases": rec.cases,
                 "Target": Number(rec.target.toFixed(2)),
                 "90% Target": Number((rec.ninetyPercent || rec.target * 0.90).toFixed(2)),
                 "Target Achieved": rec.achieved,
                 "Achievement %": Number(rec.achievementPercent.toFixed(2)),
-                "KPI (Tk)": Number(rec.kpiTk.toFixed(2))
+                "KPI (Tk)": Number(rec.kpiTk.toFixed(2)),
+                "Status": rec.customNote || "Active"
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(formattedData);
@@ -776,15 +966,26 @@
             }
 
             const container = document.getElementById('exportTableContainer');
-            
             const actionElements = container.querySelectorAll('.action-col');
+            
+            // Hide action buttons for capture
             actionElements.forEach(el => el.style.display = 'none');
+
+            // Temporarily remove max-width constraint and scroll clipping to capture full table width
+            const originalMaxWidth = container.style.maxWidth;
+            const originalOverflow = container.style.overflowX;
+            container.style.maxWidth = 'none';
+            container.style.overflowX = 'visible';
 
             html2canvas(container, {
                 backgroundColor: '#1e293b',
-                scale: 2
+                scale: 2,
+                windowWidth: container.scrollWidth + 100
             }).then(canvas => {
+                // Restore original styles and action elements
                 actionElements.forEach(el => el.style.display = '');
+                container.style.maxWidth = originalMaxWidth;
+                container.style.overflowX = originalOverflow;
 
                 const link = document.createElement('a');
                 link.download = `s2lr_co_records_${new Date().toISOString().split('T')[0]}.png`;
@@ -792,6 +993,8 @@
                 link.click();
             }).catch(err => {
                 actionElements.forEach(el => el.style.display = '');
+                container.style.maxWidth = originalMaxWidth;
+                container.style.overflowX = originalOverflow;
                 console.error(err);
                 alert('Error generating PNG image.');
             });
@@ -810,12 +1013,19 @@
             if (rec.rawDate) {
                 document.getElementById('recordDate').value = rec.rawDate;
             }
+
+            document.getElementById('fridayAllowance').checked = !!rec.friday;
+            document.getElementById('saturdayAllowance').checked = !!rec.saturday;
+            document.getElementById('festivalAllowance').checked = !!rec.festival;
+
             document.getElementById('delegatedAmount').value = rec.amount;
             document.getElementById('delegatedCases').value = rec.cases;
             document.getElementById('achievedTarget').value = rec.achieved;
 
-            calculateTarget();
-            calculateKpi();
+            if (!rec.customNote) {
+                calculateTarget();
+                calculateKpi();
+            }
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -828,6 +1038,8 @@
 
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('recordDate').value = today;
+            checkAndSetAllowancesByDate(today);
+            document.getElementById('festivalAllowance').checked = false;
             document.getElementById('delegatedAmount').value = '';
             document.getElementById('delegatedCases').value = '';
             document.getElementById('achievedTarget').value = '';
